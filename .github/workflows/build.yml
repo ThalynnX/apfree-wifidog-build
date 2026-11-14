@@ -36,6 +36,9 @@ jobs:
           CONFIG_TARGET_qualcommax_ipq60xx=y
           CONFIG_PACKAGE_apfree-wifidog=y
           CONFIG_ALL=n
+          # CONFIG_PACKAGE_gpio-button-hotplug is not set
+          # CONFIG_PACKAGE_kmod-button-hotplug is not set
+          # CONFIG_PACKAGE_kmod-gpio-button-hotplug is not set
           EOF
           make defconfig
 
