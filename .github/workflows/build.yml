@@ -23,6 +23,16 @@ jobs:
           tar --zstd -xf sdk.tar.zst
           ls -d immortalwrt-sdk-*
 
+      - name: 恢复 SDK 构建缓存
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            immortalwrt-sdk-*/staging_dir
+            immortalwrt-sdk-*/build_dir
+            immortalwrt-sdk-*/dl
+          key: sdk-v2-${{ github.sha }}
+          restore-keys: sdk-v2-
+
       - name: SDK 自检（库与包定义）
         run: |
           SDK=$(ls -d immortalwrt-sdk-*)
@@ -50,6 +60,16 @@ jobs:
           make defconfig
           set -o pipefail
           make -j$(nproc) package/apfree-wifidog/compile V=s 2>&1 | tee /tmp/build.log
+
+      - name: 保存 SDK 构建缓存
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            immortalwrt-sdk-*/staging_dir
+            immortalwrt-sdk-*/build_dir
+            immortalwrt-sdk-*/dl
+          key: sdk-v2-${{ github.sha }}
 
       - name: 上传日志
         if: always()
