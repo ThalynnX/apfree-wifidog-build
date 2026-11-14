@@ -39,10 +39,17 @@ jobs:
           EOF
           make defconfig
 
+      - name: 先构建宿主机工具链
+        run: |
+          cd owrt
+          set -o pipefail
+          make -j$(nproc) tools/compile V=s 2>&1 | tail -n 200
+
       - name: 编译
         run: |
           cd owrt
-          make -j$(nproc) package/apfree-wifidog/compile V=s 2>&1 | tail -n 300
+          set -o pipefail
+          make -j$(nproc) package/apfree-wifidog/compile V=s 2>&1 | tail -n 400
 
       - name: 上传产物
         uses: actions/upload-artifact@v4
