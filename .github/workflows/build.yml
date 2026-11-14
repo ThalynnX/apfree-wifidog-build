@@ -23,33 +23,34 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-      - name: 缓存宿主机工具链
-        uses: actions/cache@v4
+      - name: 放入 apfree-wifidog 包定义
+        run: |
+          mkdir -p owrt/package/local/apfree-wifidog
+          cp pkg/Makefile owrt/package/local/apfree-wifidog/Makefile
+
+      - name: 配置目标（只选 target/subtarget，不选设备，避免拉入内核模块）
+        run: |
+          cd owrt
+          cat > .config <<'EOF'
+          CONFIG_TARGET_qualcommax=y
+          CONFIG_TARGET_qualcommax_ipq60xx=y
+          CONFIG_PACKAGE_apfree-wifidog=y
+          CONFIG_ALL=n
+          EOF
+          make defconfig
+
+      - name: 恢复工具链缓存
+        uses: actions/cache/restore@v4
         with:
           path: |
             owrt/staging_dir
             owrt/build_dir/host
             owrt/build_dir/hostpkg
             owrt/build_dir/toolchain-aarch64_cortex-a53_gcc-14.4.0_musl
-          key: chain-v2-${{ hashFiles('pkg/Makefile') }}
+          key: chain-v3-${{ github.sha }}
+          restore-keys: chain-v3-
 
-      - name: 放入 apfree-wifidog 包定义
-        run: |
-          mkdir -p owrt/package/local/apfree-wifidog
-          cp pkg/Makefile owrt/package/local/apfree-wifidog/Makefile
-
-      - name: 配置目标为 qualcommax/ipq60xx (aarch64_cortex-a53)
-        run: |
-          cd owrt
-          cat > .config <<'EOF'
-          CONFIG_TARGET_qualcommax=y
-          CONFIG_TARGET_qualcommax_ipq60xx=y
-          CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_jdcloud_re-ss-01=y
-          CONFIG_PACKAGE_apfree-wifidog=y
-          EOF
-          make defconfig
-
-      - name: 先构建宿主机工具链
+      - name: 构建宿主机工具链
         run: |
           cd owrt
           set -o pipefail
@@ -60,6 +61,17 @@ jobs:
           cd owrt
           set -o pipefail
           make -j$(nproc) toolchain/compile V=s 2>&1 | tail -n 200
+
+      - name: 保存工具链缓存（失败也保存）
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            owrt/staging_dir
+            owrt/build_dir/host
+            owrt/build_dir/hostpkg
+            owrt/build_dir/toolchain-aarch64_cortex-a53_gcc-14.4.0_musl
+          key: chain-v3-${{ github.sha }}
 
       - name: 编译
         run: |
@@ -76,6 +88,7 @@ jobs:
           if-no-files-found: warn
 
       - name: 上传产物
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: apfree-wifidog-aarch64_cortex-a53
