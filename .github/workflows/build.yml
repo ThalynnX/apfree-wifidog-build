@@ -52,12 +52,24 @@ jobs:
           ./scripts/feeds install -a || true
           echo "== feeds 后的 libs =="; ls package/feeds/packages 2>/dev/null | head -20
 
+      - name: 放入 LuCI 面板
+        run: |
+          SDK=$(ls -d immortalwrt-sdk-*)
+          cd $SDK
+          git clone --depth 1 https://github.com/liudf0716/luci /tmp/liudf-luci
+          cp -a /tmp/liudf-luci/applications/luci-app-apfree-wifidog package/luci-app-apfree-wifidog
+          cp /tmp/liudf-luci/luci.mk package/luci-app-apfree-wifidog/luci.mk
+          sed -i 's|include ../../luci.mk|include ./luci.mk|' package/luci-app-apfree-wifidog/Makefile
+          echo "== 面板内容 =="; ls package/luci-app-apfree-wifidog; cat package/luci-app-apfree-wifidog/Makefile
+
       - name: 配置并编译
         run: |
           SDK=$(ls -d immortalwrt-sdk-*)
           cd $SDK
           cat > .config <<'EOF'
           CONFIG_PACKAGE_apfree-wifidog=y
+          CONFIG_PACKAGE_luci-app-apfree-wifidog=y
+          CONFIG_PACKAGE_luci-base=y
           CONFIG_PACKAGE_libevent2=y
           CONFIG_PACKAGE_libevent2-core=y
           CONFIG_PACKAGE_libevent2-extra=y
@@ -73,7 +85,7 @@ jobs:
           EOF
           make defconfig
           set -o pipefail
-          make -j$(nproc) package/apfree-wifidog/compile V=s 2>&1 | tee /tmp/build.log
+          make -j$(nproc) package/apfree-wifidog/compile package/luci-app-apfree-wifidog/compile V=s 2>&1 | tee /tmp/build.log
 
       - name: 保存 SDK 构建缓存
         if: always()
