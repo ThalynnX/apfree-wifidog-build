@@ -11,78 +11,47 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: 安装构建依赖
+      - name: 安装依赖
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq build-essential libncurses-dev gawk git zstd rsync unzip bzip2
+          sudo apt-get install -y -qq zstd tar curl
 
-      - name: 拉取 ImmortalWrt 源码与 feeds
+      - name: 下载并解压 ImmortalWrt SDK
         run: |
-          git clone --depth 1 https://github.com/immortalwrt/immortalwrt.git owrt
-          cd owrt
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
+          curl -sL -o sdk.tar.zst "https://downloads.immortalwrt.org/snapshots/targets/qualcommax/ipq60xx/immortalwrt-sdk-qualcommax-ipq60xx_gcc-14.4.0_musl.Linux-x86_64.tar.zst"
+          echo "下载字节数: $(stat -c%s sdk.tar.zst)"
+          tar --zstd -xf sdk.tar.zst
+          ls -d immortalwrt-sdk-*
 
-      - name: 放入 apfree-wifidog 包定义
+      - name: SDK 自检（库与包定义）
         run: |
-          mkdir -p owrt/package/local/apfree-wifidog
-          cp pkg/Makefile owrt/package/local/apfree-wifidog/Makefile
+          SDK=$(ls -d immortalwrt-sdk-*)
+          cd $SDK
+          echo "== staging 库 =="; ls staging_dir/target-aarch64_cortex-a53_musl/usr/lib 2>/dev/null | head -20; echo "库数量: $(ls staging_dir/target-aarch64_cortex-a53_musl/usr/lib 2>/dev/null | wc -l)"
+          echo "== staging 头文件 =="; ls staging_dir/target-aarch64_cortex-a53_musl/usr/include 2>/dev/null | head -20
+          echo "== 工具链 =="; ls staging_dir/toolchain-aarch64_cortex-a53_gcc-14.4.0_musl/bin 2>/dev/null | head -5
+          echo "== package 目录 =="; ls package | head -20
 
-      - name: 配置目标（只选 target/subtarget，不选设备，避免拉入内核模块）
+      - name: 放入包定义并拉取 feeds
         run: |
-          cd owrt
-          cat > .config <<'EOF'
-          CONFIG_TARGET_qualcommax=y
-          CONFIG_TARGET_qualcommax_ipq60xx=y
-          CONFIG_PACKAGE_apfree-wifidog=y
-          CONFIG_ALL=n
-          # CONFIG_PACKAGE_gpio-button-hotplug is not set
-          # CONFIG_PACKAGE_kmod-button-hotplug is not set
-          # CONFIG_PACKAGE_kmod-gpio-button-hotplug is not set
-          EOF
+          SDK=$(ls -d immortalwrt-sdk-*)
+          cd $SDK
+          mkdir -p package/apfree-wifidog
+          cp ../pkg/Makefile package/apfree-wifidog/Makefile
+          ./scripts/feeds update -a || true
+          ./scripts/feeds install -a || true
+          echo "== feeds 后的 libs =="; ls package/feeds/packages 2>/dev/null | head -20
+
+      - name: 配置并编译
+        run: |
+          SDK=$(ls -d immortalwrt-sdk-*)
+          cd $SDK
+          echo "CONFIG_PACKAGE_apfree-wifidog=y" > .config
           make defconfig
-
-      - name: 恢复工具链缓存
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            owrt/staging_dir
-            owrt/build_dir/host
-            owrt/build_dir/hostpkg
-            owrt/build_dir/toolchain-aarch64_cortex-a53_gcc-14.4.0_musl
-          key: chain-v3-${{ github.sha }}
-          restore-keys: chain-v3-
-
-      - name: 构建宿主机工具链
-        run: |
-          cd owrt
-          set -o pipefail
-          make -j$(nproc) tools/compile V=s 2>&1 | tail -n 200
-
-      - name: 构建目标交叉工具链
-        run: |
-          cd owrt
-          set -o pipefail
-          make -j$(nproc) toolchain/compile V=s 2>&1 | tail -n 200
-
-      - name: 保存工具链缓存（失败也保存）
-        if: always()
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            owrt/staging_dir
-            owrt/build_dir/host
-            owrt/build_dir/hostpkg
-            owrt/build_dir/toolchain-aarch64_cortex-a53_gcc-14.4.0_musl
-          key: chain-v3-${{ github.sha }}
-
-      - name: 编译
-        run: |
-          cd owrt
           set -o pipefail
           make -j$(nproc) package/apfree-wifidog/compile V=s 2>&1 | tee /tmp/build.log
 
-      - name: 上传构建日志（无论成败）
+      - name: 上传日志
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -96,6 +65,6 @@ jobs:
         with:
           name: apfree-wifidog-aarch64_cortex-a53
           path: |
-            owrt/bin/packages/**/*.apk
-            owrt/bin/packages/**/*.ipk
+            immortalwrt-sdk-*/bin/packages/**/*.apk
+            immortalwrt-sdk-*/bin/packages/**/*.ipk
           if-no-files-found: warn
