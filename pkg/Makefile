@@ -21,7 +21,7 @@ define Package/apfree-wifidog
   CATEGORY:=Network
   TITLE:=ApFree WiFiDog captive portal
   URL:=https://github.com/liudf0716/apfree-wifidog
-  DEPENDS:=+libuci +libevent2-core +libevent2-openssl +libevent2-extra +libopenssl +libjson-c +libmosquitto-ssl +libnetfilter-queue +libnftnl +libmnl +zlib
+  DEPENDS:=+libuci +libevent2 +libevent2-core +libevent2-openssl +libevent2-extra +libopenssl +libjson-c +libmosquitto-ssl +libnetfilter-queue +libnftnl +libmnl +zlib
 endef
 
 define Package/apfree-wifidog/description
