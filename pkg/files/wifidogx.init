@@ -64,6 +64,7 @@ prepare_common_settings() {
 prepare_auth_server_settings() {
 	case "$auth_server_mode" in
 	cloud)
+		printf "AuthServerMode 0\n" >> "$CONFIGFILE"
 		printf "DeviceID %s\nAuthServer {\n\tHostname %s\n\tHTTPPort %s\n\tPath %s\n}\n" \
 			"$device_id" "$auth_server_hostname" "$auth_server_port" "$auth_server_path" >> "$CONFIGFILE"
         
@@ -84,8 +85,12 @@ prepare_auth_server_settings() {
 		esac
 			;;
 	local)
+		printf "AuthServerMode 2\n" >> "$CONFIGFILE"
 		[ -n "$auth_server_offline_file" ] && printf "AuthServerOfflineFile %s\n" "$auth_server_offline_file" >> "$CONFIGFILE"
 		[ -n "$local_portal" ] && printf "LocalPortal %s\n" "$local_portal" >> "$CONFIGFILE"
+		;;
+	bypass)
+		printf "AuthServerMode 1\n" >> "$CONFIGFILE"
 		;;
 	esac
 }
