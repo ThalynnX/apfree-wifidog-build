@@ -56,7 +56,20 @@ jobs:
         run: |
           SDK=$(ls -d immortalwrt-sdk-*)
           cd $SDK
-          echo "CONFIG_PACKAGE_apfree-wifidog=y" > .config
+          cat > .config <<'EOF'
+          CONFIG_PACKAGE_apfree-wifidog=y
+          CONFIG_PACKAGE_libevent2-core=y
+          CONFIG_PACKAGE_libevent2-extra=y
+          CONFIG_PACKAGE_libevent2-openssl=y
+          CONFIG_PACKAGE_libjson-c=y
+          CONFIG_PACKAGE_libmosquitto-ssl=y
+          CONFIG_PACKAGE_libnetfilter-queue=y
+          CONFIG_PACKAGE_libnftnl=y
+          CONFIG_PACKAGE_libmnl=y
+          CONFIG_PACKAGE_libuci=y
+          CONFIG_PACKAGE_libopenssl=y
+          CONFIG_PACKAGE_zlib=y
+          EOF
           make defconfig
           set -o pipefail
           make -j$(nproc) package/apfree-wifidog/compile V=s 2>&1 | tee /tmp/build.log
