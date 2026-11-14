@@ -39,9 +39,9 @@ CMAKE_OPTIONS += \
 # 中的同名 enum 冲突，去掉自定义宏并直接引入内核头文件。
 define Build/Prepare
 	$(call Build/Prepare/Default)
-	$(SED) '/^#define BPF_ANY 0$$/d' $(PKG_BUILD_DIR)/src/api_handlers_bpf.c
-	$(SED) '/^#define BPF_NOEXIST 1$$/d' $(PKG_BUILD_DIR)/src/api_handlers_bpf.c
-	$(SED) '/^#define BPF_EXIST 2$$/d' $(PKG_BUILD_DIR)/src/api_handlers_bpf.c
+	$(SED) '/^#define BPF_ANY /d' $(PKG_BUILD_DIR)/src/api_handlers_bpf.c
+	$(SED) '/^#define BPF_NOEXIST /d' $(PKG_BUILD_DIR)/src/api_handlers_bpf.c
+	$(SED) '/^#define BPF_EXIST /d' $(PKG_BUILD_DIR)/src/api_handlers_bpf.c
 	$(SED) '1i #include <linux/bpf.h>' $(PKG_BUILD_DIR)/src/api_handlers_bpf.c
 	grep -n "linux/bpf.h" $(PKG_BUILD_DIR)/src/api_handlers_bpf.c
 endef
