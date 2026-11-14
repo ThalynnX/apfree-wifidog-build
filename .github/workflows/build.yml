@@ -47,7 +47,8 @@ jobs:
           SDK=$(ls -d immortalwrt-sdk-*)
           cd $SDK
           mkdir -p package/apfree-wifidog
-          cp ../pkg/Makefile package/apfree-wifidog/Makefile
+          cp -a ../pkg/. package/apfree-wifidog/
+          ls -l package/apfree-wifidog package/apfree-wifidog/files
           ./scripts/feeds update -a || true
           ./scripts/feeds install -a || true
           echo "== feeds 后的 libs =="; ls package/feeds/packages 2>/dev/null | head -20
