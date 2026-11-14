@@ -56,7 +56,7 @@ jobs:
         run: |
           SDK=$(ls -d immortalwrt-sdk-*)
           cd $SDK
-          git clone --depth 1 https://github.com/liudf0716/luci /tmp/liudf-luci
+          git clone --depth 1 --branch master https://github.com/liudf0716/luci /tmp/liudf-luci
           cp -a /tmp/liudf-luci/applications/luci-app-apfree-wifidog package/luci-app-apfree-wifidog
           cp /tmp/liudf-luci/luci.mk package/luci-app-apfree-wifidog/luci.mk
           sed -i 's|include ../../luci.mk|include ./luci.mk|' package/luci-app-apfree-wifidog/Makefile
