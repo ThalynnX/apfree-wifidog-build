@@ -23,6 +23,15 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
+      - name: 缓存宿主机工具链
+        uses: actions/cache@v4
+        with:
+          path: |
+            owrt/staging_dir
+            owrt/build_dir/host
+            owrt/build_dir/hostpkg
+          key: hosttools-v1-${{ hashFiles('pkg/Makefile') }}
+
       - name: 放入 apfree-wifidog 包定义
         run: |
           mkdir -p owrt/package/local/apfree-wifidog
@@ -49,7 +58,15 @@ jobs:
         run: |
           cd owrt
           set -o pipefail
-          make -j$(nproc) package/apfree-wifidog/compile V=s 2>&1 | tail -n 400
+          make -j$(nproc) package/apfree-wifidog/compile V=s 2>&1 | tee /tmp/build.log
+
+      - name: 上传构建日志（无论成败）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: /tmp/build.log
+          if-no-files-found: warn
 
       - name: 上传产物
         uses: actions/upload-artifact@v4
