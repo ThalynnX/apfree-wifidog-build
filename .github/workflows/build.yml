@@ -30,7 +30,8 @@ jobs:
             owrt/staging_dir
             owrt/build_dir/host
             owrt/build_dir/hostpkg
-          key: hosttools-v1-${{ hashFiles('pkg/Makefile') }}
+            owrt/build_dir/toolchain-aarch64_cortex-a53_gcc-14.4.0_musl
+          key: chain-v2-${{ hashFiles('pkg/Makefile') }}
 
       - name: 放入 apfree-wifidog 包定义
         run: |
@@ -53,6 +54,12 @@ jobs:
           cd owrt
           set -o pipefail
           make -j$(nproc) tools/compile V=s 2>&1 | tail -n 200
+
+      - name: 构建目标交叉工具链
+        run: |
+          cd owrt
+          set -o pipefail
+          make -j$(nproc) toolchain/compile V=s 2>&1 | tail -n 200
 
       - name: 编译
         run: |
