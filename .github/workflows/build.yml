@@ -58,6 +58,7 @@ jobs:
           cd $SDK
           cat > .config <<'EOF'
           CONFIG_PACKAGE_apfree-wifidog=y
+          CONFIG_PACKAGE_libevent2=y
           CONFIG_PACKAGE_libevent2-core=y
           CONFIG_PACKAGE_libevent2-extra=y
           CONFIG_PACKAGE_libevent2-openssl=y
