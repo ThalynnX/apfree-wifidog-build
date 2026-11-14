@@ -1,0 +1,54 @@
+name: build-apfree-wifidog
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装构建依赖
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential libncurses-dev gawk git zstd rsync unzip bzip2
+
+      - name: 拉取 ImmortalWrt 源码与 feeds
+        run: |
+          git clone --depth 1 https://github.com/immortalwrt/immortalwrt.git owrt
+          cd owrt
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: 放入 apfree-wifidog 包定义
+        run: |
+          mkdir -p owrt/package/local/apfree-wifidog
+          cp pkg/Makefile owrt/package/local/apfree-wifidog/Makefile
+
+      - name: 配置目标为 qualcommax/ipq60xx (aarch64_cortex-a53)
+        run: |
+          cd owrt
+          cat > .config <<'EOF'
+          CONFIG_TARGET_qualcommax=y
+          CONFIG_TARGET_qualcommax_ipq60xx=y
+          CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_jdcloud_re-ss-01=y
+          CONFIG_PACKAGE_apfree-wifidog=y
+          EOF
+          make defconfig
+
+      - name: 编译
+        run: |
+          cd owrt
+          make -j$(nproc) package/apfree-wifidog/compile V=s 2>&1 | tail -n 300
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: apfree-wifidog-aarch64_cortex-a53
+          path: |
+            owrt/bin/packages/**/*.apk
+            owrt/bin/packages/**/*.ipk
+          if-no-files-found: warn
