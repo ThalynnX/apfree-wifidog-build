@@ -61,6 +61,11 @@ jobs:
           cp -a /tmp/liudf-luci/applications/luci-app-apfree-wifidog package/luci-app-apfree-wifidog
           cp /tmp/liudf-luci/luci.mk package/luci-app-apfree-wifidog/luci.mk
           sed -i 's|include ../../luci.mk|include ./luci.mk|' package/luci-app-apfree-wifidog/Makefile
+          # 修正上游面板：部分 LuCI 版本没有 tools/github.js，会 404 导致整页白屏
+          WJ=package/luci-app-apfree-wifidog/htdocs/luci-static/resources/view/wifidogx.js
+          sed -i "s|'require tools.github as github';||" $WJ
+          sed -i "s|github.desc('apfree-wifidog offers a stable and secure captive portal solution.','liudf0716','apfree-wifidog')|_('apfree-wifidog offers a stable and secure captive portal solution.')|" $WJ
+          echo "== tools.github 残留数 =="; grep -c "tools.github" $WJ || echo 0
           echo "== 面板内容 =="; ls package/luci-app-apfree-wifidog; cat package/luci-app-apfree-wifidog/Makefile
 
       - name: 配置并编译
