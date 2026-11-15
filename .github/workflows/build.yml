@@ -65,6 +65,10 @@ jobs:
           WJ=package/luci-app-apfree-wifidog/htdocs/luci-static/resources/view/wifidogx.js
           sed -i "s|'require tools.github as github';||" $WJ
           sed -i "s|github.desc('apfree-wifidog offers a stable and secure captive portal solution.','liudf0716','apfree-wifidog')|_('apfree-wifidog offers a stable and secure captive portal solution.')|" $WJ
+          # 上游引用了不存在的控件 WifidogxGroupSelect（无实现），换成内置列表控件
+          sed -i 's|widgets.WifidogxGroupSelect|form.DynamicList|g' $WJ
+          sed -i "s|o.setGroupType('mac');||; s|o.setGroupType('wildcard');||" $WJ
+          echo "== 残留检查 =="; grep -c "WifidogxGroupSelect" $WJ || echo 0
           echo "== tools.github 残留数 =="; grep -c "tools.github" $WJ || echo 0
           echo "== 面板内容 =="; ls package/luci-app-apfree-wifidog; cat package/luci-app-apfree-wifidog/Makefile
 
